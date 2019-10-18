@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Example web app and serverless API for uploading photos",
   "scripts": {
+    "app:start": "cd ./clients/events-web-app && npm start",
     "services:watch": "cd ./services && npm run watch"
   },
   "keywords": [
