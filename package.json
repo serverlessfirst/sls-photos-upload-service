@@ -1,0 +1,16 @@
+{
+  "name": "sls-photos-upload-app",
+  "version": "0.1.0",
+  "description": "Example web app and serverless API for uploading photos",
+  "scripts": {
+    "services:watch": "cd ./services && npm run watch"
+  },
+  "keywords": [
+    "serverless",
+    "API Gateway",
+    "AWS"
+  ],
+  "author": "Paul Swail",
+  "license": "ISC",
+  "devDependencies": {}
+}

@@ -1,0 +1,46 @@
+# Stack containing core shared infrastructure resources for the eventsapp sample app.
+service: eventsapp-infra
+
+provider:
+    name: aws
+    region: ${file(../common/serverless/provider-settings.yml):region}
+    runtime: ${file(../common/serverless/provider-settings.yml):runtime}
+    stage: ${opt:stage,'dev'}
+    logRetentionInDays: ${file(../common/serverless/provider-settings.yml):logRetentionInDays}
+    stackPolicy:
+    -   Effect: Allow
+        Principal: '*'
+        Action: 'Update:*'
+        Resource: '*'
+    # Prevent CloudFormation from replacing or deleting DynamoDB tables and Cognito user pools.
+    -   Effect: Deny
+        Principal: '*'
+        Resource: '*'
+        Condition:
+            StringEquals:
+                ResourceType:
+                    - AWS::DynamoDB::Table
+                    - AWS::Cognito::UserPool
+        Action:
+            - Update:Replace
+            - Update:Delete
+
+custom:
+    appName: eventsapp
+    dynamoDbTablePrefix: ${self:custom.appName}-${self:provider.stage}
+    cognitoResourcePrefix: ${self:custom.appName}-${self:provider.stage}
+    photosBucketName: ${self:custom.appName}-photos-${self:provider.stage}.sampleapps.winterwindsoftware.com # TODO: change this to something globally unique
+    hostedLoginDomain: ${self:custom.appName}-winterwind-${self:provider.stage} # TODO: change this to something globally unique
+
+resources:
+    - ${file(resources/s3-cloudfront-resources.yml)}
+    - ${file(resources/cognito-resources.yml)}
+    - ${file(resources/dynamodb-resources.yml)}
+    - Outputs:
+        AWSAccountId:
+            Value: !Ref 'AWS::AccountId'
+        DynamoDBTablePrefix:
+            Value: ${self:custom.dynamoDbTablePrefix}
+
+plugins:
+- serverless-pseudo-parameters

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.common.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "target": "es2017",
+    "types": ["node"],
+    "moduleResolution": "node",
+    "paths": {
+      "@svc-models": ["shared/models"],
+      "@svc-models/*": ["shared/models/*"],
+      "@svc-utils/*": ["shared/utils/*"],
+      "@svc-config": ["./config.ts"],
+      "@common/*": ["../../common/*"]
+    }
+  }
+}

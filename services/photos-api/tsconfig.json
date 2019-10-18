@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.services.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "baseUrl": "./src",
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "../common/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".serverless",
+    ".webpack",
+    "dist"
+  ]
+}

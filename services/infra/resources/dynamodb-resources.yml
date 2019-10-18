@@ -1,0 +1,32 @@
+Resources:
+    # Main table for storing the core entities in the app (uses single table overloaded index design)
+    MainTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: ${self:custom.dynamoDbTablePrefix}-main
+            BillingMode: PAY_PER_REQUEST
+            AttributeDefinitions:
+            -   AttributeName: pk
+                AttributeType: S
+            -   AttributeName: sk
+                AttributeType: S
+            -   AttributeName: gs1sk
+                AttributeType: S
+            KeySchema:
+            -   AttributeName: pk
+                KeyType: HASH
+            -   AttributeName: sk
+                KeyType: RANGE
+            GlobalSecondaryIndexes:
+            -   IndexName: gs1
+                KeySchema:
+                -   AttributeName: sk
+                    KeyType: HASH
+                -   AttributeName: gs1sk
+                    KeyType: RANGE
+                Projection:
+                    ProjectionType: ALL
+
+Outputs:
+    DDBTableMain:
+        Value: !Ref MainTable

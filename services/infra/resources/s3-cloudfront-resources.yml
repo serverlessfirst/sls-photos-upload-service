@@ -1,0 +1,72 @@
+Resources:
+
+    PhotosBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: !Sub '${self:custom.photosBucketName}'
+            AccessControl: Private
+            CorsConfiguration:
+                CorsRules:
+                -   AllowedHeaders: ['*']
+                    AllowedMethods: ['PUT']
+                    AllowedOrigins: ['*']
+
+    PhotosBucketPolicy:
+        Type: AWS::S3::BucketPolicy
+        Properties:
+            Bucket:
+                Ref: PhotosBucket
+            PolicyDocument:
+                Statement:
+                # Read permission for CloudFront
+                -   Action: s3:GetObject
+                    Effect: "Allow"
+                    Resource: !Sub "arn:aws:s3:::#{PhotosBucket}/*"
+                    Principal:
+                        CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+    CloudFrontOriginAccessIdentity:
+        Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+        Properties:
+            CloudFrontOriginAccessIdentityConfig:
+                Comment: !Sub 'Identity for accessing CloudFront from S3 within stack #{AWS::StackName}'
+
+    # Cloudfront distro backed by PhotosBucket
+    PhotosCdnDistribution:
+        Type: AWS::CloudFront::Distribution
+        Properties:
+            DistributionConfig:
+                Origins:
+                    # S3 origin for static content
+                    -   DomainName: !Sub '${self:custom.photosBucketName}.s3.amazonaws.com'
+                        Id: PhotosBucketS3Origin
+                        S3OriginConfig:
+                            OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/#{CloudFrontOriginAccessIdentity}'
+                Enabled: true
+                Comment: CDN for photos.
+                DefaultRootObject: index.html
+                HttpVersion: http2
+                DefaultCacheBehavior:
+                    AllowedMethods:
+                        - DELETE
+                        - GET
+                        - HEAD
+                        - OPTIONS
+                        - PATCH
+                        - POST
+                        - PUT
+                    Compress: true
+                    TargetOriginId: PhotosBucketS3Origin
+                    ForwardedValues:
+                        QueryString: false
+                        Cookies:
+                            Forward: none
+                    ViewerProtocolPolicy: redirect-to-https
+                PriceClass: PriceClass_200
+
+Outputs:
+    PhotosBucket:
+        Value: !Ref PhotosBucket
+    PhotosCdnDistributionId:
+        Value: !Ref PhotosCdnDistribution
+    PhotosCdnDistributionDomainName:
+        Value: !GetAtt PhotosCdnDistribution.DomainName

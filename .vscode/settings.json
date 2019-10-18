@@ -1,0 +1,5 @@
+{
+    "terminal.integrated.env.osx": {
+        "AWS_PROFILE": "winterwind_serverless"
+    }
+}

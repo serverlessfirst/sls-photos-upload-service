@@ -1,0 +1,25 @@
+# This file defines IAM statements for common access patterns to shared resources that can be referenced from different serverless services.
+ssmRead:
+    Effect: Allow
+    Action:
+        - ssm:GetParameter*
+    Resource:
+        - arn:aws:ssm:${self:provider.region}:${self:custom.awsAccountId}:parameter/${self:custom.appName}/${self:provider.stage}/*
+        - arn:aws:ssm:${self:provider.region}:${self:custom.awsAccountId}:parameter/${self:custom.appName}/${self:provider.stage}
+dynamoDBReadOnly:
+    Effect: Allow
+    Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+    Resource: arn:aws:dynamodb:${self:provider.region}:${self:custom.awsAccountId}:table/${cf:${self:custom.infraStack}.DynamoDBTablePrefix}*
+dynamoDBReadWrite:
+    Effect: Allow
+    Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+    Resource: arn:aws:dynamodb:${self:provider.region}:${self:custom.awsAccountId}:table/${cf:${self:custom.infraStack}.DynamoDBTablePrefix}*

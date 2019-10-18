@@ -1,0 +1,53 @@
+{
+  "name": "sls-photos-upload-services",
+  "version": "0.1.0",
+  "description": "Example serverless API for uploading photos ",
+  "scripts": {
+    "lint": "concurrently 'npm:photos-api:lint'",
+    "watch": "concurrently 'npm:photos-api:watch'",
+    "infra:deploy": "cd ./infra && sls deploy",
+    "photos-api:lint": "cd ./photos-api && eslint . --ext .ts,.tsx",
+    "photos-api:watch": "cd ./photos-api && tsc -w",
+    "photos-api:deploy": "cd ./photos-api && sls deploy"
+  },
+  "keywords": [
+    "serverless",
+    "API Gateway",
+    "AWS"
+  ],
+  "author": "Paul Swail",
+  "license": "ISC",
+  "dependencies": {
+    "@aws/dynamodb-expressions": "^0.7.3",
+    "aws-sdk": "^2.547.0",
+    "uuid": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.33",
+    "@types/jest": "^24.0.19",
+    "@types/node": "^10.14.7",
+    "@types/uuid": "^3.4.5",
+    "@typescript-eslint/eslint-plugin": "^2.3.3",
+    "@typescript-eslint/parser": "^2.3.3",
+    "concurrently": "^5.0.0",
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb-typescript": "^5.0.0",
+    "eslint-import-resolver-typescript": "^2.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.16.0",
+    "jest": "^24.9.0",
+    "serverless": "^1.54.0",
+    "serverless-export-env": "^1.2.0",
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-pseudo-parameters": "^2.5.0",
+    "serverless-webpack": "^5.3.1",
+    "ts-jest": "^24.1.0",
+    "ts-loader": "^6.2.0",
+    "ts-node": "^8.4.1",
+    "tsconfig-paths": "^3.9.0",
+    "tsconfig-paths-webpack-plugin": "^3.2.0",
+    "typescript": "^3.6.4",
+    "webpack": "^4.41.0"
+  }
+}

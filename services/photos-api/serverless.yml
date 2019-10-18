@@ -1,0 +1,102 @@
+service: eventsapp-photos-api
+
+provider:
+    name: aws
+    region: ${file(../common/serverless/provider-settings.yml):region}
+    runtime: ${file(../common/serverless/provider-settings.yml):runtime}
+    stage: ${opt:stage,'dev'}
+    logRetentionInDays: ${file(../common/serverless/provider-settings.yml):logRetentionInDays}
+    environment:
+        STAGE: ${self:provider.stage}
+        API_GW_DOMAIN:
+            Ref: ApiGatewayRestApi
+        DYNAMODB_TABLE_MAIN: ${cf:${self:custom.infraStack}.DDBTableMain}
+        COGNITO_USER_POOL_ID: ${cf:${self:custom.infraStack}.UserPoolId}
+        COGNITO_USER_POOL_WEB_CLIENT_ID: ${cf:${self:custom.infraStack}.UserPoolWebClientId}
+        S3_PHOTOS_BUCKET: ${cf:${self:custom.infraStack}.PhotosBucket}
+        CLOUDFRONT_PHOTOS_DOMAIN_NAME: ${cf:${self:custom.infraStack}.PhotosCdnDistributionDomainName}
+
+custom:
+    appName: eventsapp
+    infraStack: ${self:custom.appName}-infra-${self:provider.stage}
+    awsAccountId: ${cf:${self:custom.infraStack}.AWSAccountId}
+    apiAuthorizer:
+        arn: arn:aws:cognito-idp:${self:provider.region}:${self:custom.awsAccountId}:userpool/${cf:${self:custom.infraStack}.UserPoolId} # Read CognitoUserPool ID from CF stack output of the infra service.
+    webpack:
+        includeModules: false
+    corsConfig: true
+
+functions:
+    # =================================================================
+    # API Gateway event handlers
+    # =================================================================
+    httpGetPhotos:
+        handler: src/http/get-photos.handler
+        iamRoleStatements:
+            -   ${file(../common/serverless/iam-policies.yml):dynamoDBReadOnly}
+        events:
+            - http:
+                path: events/{eventId}/photos
+                method: get
+                authorizer: ${self:custom.apiAuthorizer}
+                cors: ${self:custom.corsConfig}
+
+    httpInitiateUpload:
+        handler: src/http/initiate-upload.handler
+        iamRoleStatements:
+            -   Effect: Allow
+                Action:
+                - s3:PutObject
+                Resource: arn:aws:s3:::${self:provider.environment.S3_PHOTOS_BUCKET}*
+        events:
+            - http:
+                path: events/{eventId}/photos/initiate-upload
+                method: post
+                authorizer: ${self:custom.apiAuthorizer}
+                cors: ${self:custom.corsConfig}
+
+    # =================================================================
+    # S3 event handlers
+    # =================================================================
+    s3ProcessUploadedPhoto:
+        handler: src/s3/process-uploaded-photo.handler
+        iamRoleStatements:
+            -   ${file(../common/serverless/iam-policies.yml):dynamoDBReadWrite}
+            -   Effect: Allow
+                Action:
+                - s3:GetObject
+                - s3:HeadObject
+                Resource: arn:aws:s3:::${self:provider.environment.S3_PHOTOS_BUCKET}*
+        events:
+            - s3:
+                bucket: ${cf:${self:custom.infraStack}.PhotosBucket}
+                event: s3:ObjectCreated:*
+                rules:
+                    - prefix: uploads/
+                existing: true
+
+package:
+    individually: true
+
+resources:
+    Resources:
+        # Ensure CORS headers are sent with 4XX responses from API Gateway
+        GatewayResponseDefault4XX:
+            Type: AWS::ApiGateway::GatewayResponse
+            Properties:
+                ResponseParameters:
+                    gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+                    gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+                ResponseType: DEFAULT_4XX
+                RestApiId:
+                    Ref: ApiGatewayRestApi
+    Outputs:
+        ApiUrl:
+            Description: "The API Gateway URL"
+            Value: !Sub 'https://#{ApiGatewayRestApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+
+plugins:
+- serverless-pseudo-parameters
+- serverless-webpack
+- serverless-export-env
+- serverless-iam-roles-per-function

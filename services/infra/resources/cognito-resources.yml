@@ -1,0 +1,134 @@
+Resources:
+    CognitoUserPoolAppUserPool:
+        Type: AWS::Cognito::UserPool
+        Properties:
+            UserPoolName: ${self:custom.cognitoResourcePrefix}-userpool
+            Schema:
+            -   Name: name
+                AttributeDataType: String
+                Mutable: true
+                Required: false
+            -   Name: email
+                AttributeDataType: String
+                Mutable: true
+                Required: true
+            -   Name: phone_number
+                AttributeDataType: String
+                Mutable: true
+                Required: false
+            UsernameAttributes:
+            - email
+            MfaConfiguration: "OFF"
+    AppUserPoolWebClient:
+        Type: "AWS::Cognito::UserPoolClient"
+        Properties:
+            ClientName: ${self:custom.cognitoResourcePrefix}-client-web
+            GenerateSecret: false
+            UserPoolId: !Ref CognitoUserPoolAppUserPool
+            SupportedIdentityProviders:
+                - COGNITO
+            ExplicitAuthFlows:
+                - USER_PASSWORD_AUTH
+            AllowedOAuthFlows:
+                - code
+                - implicit
+            AllowedOAuthFlowsUserPoolClient: true
+            AllowedOAuthScopes:
+                - email
+                - phone
+                - profile
+                - openid
+                - aws.cognito.signin.user.admin
+            # TODO: configure these URLs better
+            CallbackURLs:
+                - http://localhost:3000/
+            LogoutURLs:
+                - http://localhost:3000/
+    CognitoIdentityPool:
+        Type: AWS::Cognito::IdentityPool
+        Properties:
+            IdentityPoolName: ${self:custom.cognitoResourcePrefix}_identities
+            AllowUnauthenticatedIdentities: false
+            CognitoIdentityProviders:
+            -   ClientId: !Ref AppUserPoolWebClient
+                ProviderName:
+                    Fn::GetAtt: [ "CognitoUserPoolAppUserPool", "ProviderName" ]
+    CognitoIdentityPoolRoles:
+        Type: AWS::Cognito::IdentityPoolRoleAttachment
+        Properties:
+            IdentityPoolId: !Ref CognitoIdentityPool
+            Roles:
+                authenticated:
+                    Fn::GetAtt: [CognitoAuthRole, Arn]
+                unauthenticated:
+                    Fn::GetAtt: [CognitoUnauthRole, Arn]
+    CognitoAuthRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: /
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -   Effect: 'Allow'
+                    Principal:
+                        Federated: 'cognito-identity.amazonaws.com'
+                    Action:
+                        - 'sts:AssumeRoleWithWebIdentity'
+                    Condition:
+                        StringEquals:
+                            'cognito-identity.amazonaws.com:aud': !Ref CognitoIdentityPool
+                        'ForAnyValue:StringLike':
+                                'cognito-identity.amazonaws.com:amr': authenticated
+            Policies:
+            -   PolicyName: 'CognitoAuthorizedPolicy'
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                    -   Effect: 'Allow'
+                        Action:
+                            - 'cognito-sync:*'
+                            - 'cognito-identity:*'
+                        Resource: '*'
+    CognitoUnauthRole:
+        Type: AWS::IAM::Role
+        Properties:
+            Path: /
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                -   Effect: 'Allow'
+                    Principal:
+                        Federated: 'cognito-identity.amazonaws.com'
+                    Action:
+                        - 'sts:AssumeRoleWithWebIdentity'
+                    Condition:
+                        StringEquals:
+                            'cognito-identity.amazonaws.com:aud': !Ref CognitoIdentityPool
+                        'ForAnyValue:StringLike':
+                                'cognito-identity.amazonaws.com:amr': unauthenticated
+            Policies:
+            -   PolicyName: 'CognitoUnauthorizedPolicy'
+                PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                    -   Effect: 'Allow'
+                        Action:
+                            - 'cognito-sync:*'
+                            - 'cognito-identity:*'
+                        Resource: '*'
+
+    CognitoHostedDomain:
+        Type: AWS::Cognito::UserPoolDomain
+        Properties:
+            Domain: ${self:custom.hostedLoginDomain}
+            UserPoolId: !Ref CognitoUserPoolAppUserPool
+Outputs:
+    UserPoolId:
+        Description: ID of the User Pool
+        Value: !Ref CognitoUserPoolAppUserPool
+    IdentityPoolId:
+        Description: ID of the Identity Pool
+        Value: !Ref CognitoIdentityPool
+    UserPoolWebClientId:
+        Description: ID of the User Pool Client
+        Value: !Ref AppUserPoolWebClient
