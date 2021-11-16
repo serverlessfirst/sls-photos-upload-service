@@ -19,7 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws/dynamodb-expressions": "^0.7.3",
-    "aws-sdk": "^2.547.0",
+    "aws-sdk": "^2.814.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
