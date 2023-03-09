@@ -28,8 +28,6 @@ export const handler = async (event: S3Event): Promise<void> => {
     // Map the S3 bucket key to a CloudFront URL to be stored in the DB
     url: `https://${cloudfront.photosDistributionDomainName}/${s3Record.object.key}`,
   };
-
-  photoDetails.url = `https://${cloudfront.photosDistributionDomainName}/${s3Record.object.key}`;
   // Now write to DDB
   await savePhoto(photoDetails);
 };
